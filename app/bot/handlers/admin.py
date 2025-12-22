@@ -32,6 +32,12 @@ confirm_kb = InlineKeyboardMarkup(inline_keyboard=[
     ]
 ])
 
+# Временный хендлер, чтобы узнать ID видео
+# @router.message(F.video)
+# async def get_video_id(message: Message):
+#     # Бот пришлет вам ID отправленного видео
+#     await message.answer(f"ID вашего видео:\n<code>{message.video.file_id}</code>")
+
 
 # 1. Команда /post - начало создания рассылки
 @router.message(Command("post"))

@@ -1,4 +1,4 @@
-from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 
 def kb_language():
@@ -8,17 +8,54 @@ def kb_language():
          InlineKeyboardButton(text="English", callback_data="lang:en")]
     ])
 
-def kb_main(lang="ru"):
-    # можно позже сделать i18n
-    return ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="🎫 Мероприятия"), KeyboardButton(text="📌 Мои мероприятия")],
-            [KeyboardButton(text="🧾 Профиль"), KeyboardButton(text="Сертификат")],
-            [KeyboardButton(text="Регистрация")],
-            [KeyboardButton(text="⚙️ Настройки")]
-        ],
-        resize_keyboard=True
+# === ОБНОВЛЕННОЕ ГЛАВНОЕ МЕНЮ ===
+def kb_main(is_registered=False, lang="ru"):
+    builder = ReplyKeyboardBuilder()
+
+    reg_text = "Регистрация"
+    if lang == "uz":
+        reg_text = "Ro‘yxatdan o‘tish"
+    elif lang == "en":
+        reg_text = "Registration"
+
+    # 1 ряд
+    builder.row(
+        KeyboardButton(text="🎫 Мероприятия"),
+        KeyboardButton(text="📌 Мои мероприятия")
     )
+
+    # 2 ряд: ВМЕСТО ПРОФИЛЯ СТАВИМ "О ДВИЖЕНИИ"
+    builder.row(
+        KeyboardButton(text="ℹ️ О движении"), # <-- Изменили здесь
+        KeyboardButton(text="🪪 Сертификат")
+    )
+
+    # 3 ряд
+    if not is_registered:
+        builder.row(KeyboardButton(text=reg_text))
+
+    # 4 ряд
+    builder.row(KeyboardButton(text="⚙️ Настройки"))
+
+    return builder.as_markup(resize_keyboard=True)
+
+
+# === НОВЫЕ КНОПКИ ДЛЯ РАЗДЕЛА "О ДВИЖЕНИИ" ===
+def kb_about_menu():
+    """Кнопки под видео о движении"""
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text="🎯 Направления", callback_data="about_directions"))
+    builder.row(InlineKeyboardButton(text="💼 Деятельность", callback_data="about_activity"))
+    builder.row(InlineKeyboardButton(text="🚀 Проекты", callback_data="about_projects"))
+    # Можно добавить ссылку на сайт или канал
+    builder.row(InlineKeyboardButton(text="🌐 Наш сайт", url="https://yuksalish.org"))
+    return builder.as_markup()
+
+def kb_back_to_about():
+    """Кнопка 'Назад' внутри раздела"""
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text="⬅️ Назад к описанию", callback_data="about_main"))
+    return builder.as_markup()
 
 def kb_phone():
     return ReplyKeyboardMarkup(

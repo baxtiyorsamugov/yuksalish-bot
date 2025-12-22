@@ -5,7 +5,7 @@ from sqlalchemy import select
 
 # Импорты из вашего проекта
 from app.bot.states import Reg
-from app.bot.keyboards import kb_phone, kb_confirm, get_regions_keyboard, get_spheres_keyboard
+from app.bot.keyboards import kb_phone, kb_confirm, get_regions_keyboard, get_spheres_keyboard, kb_main
 from app.db.session import SessionLocal
 from app.db.models import User, Profile, Region, Sphere
 from app.db.repo import get_all_regions, get_all_spheres  # Новые функции запросов
@@ -167,18 +167,24 @@ async def confirm_no(call: CallbackQuery, state: FSMContext):
 
 
 # === 9. Финал: Сохранение в БД и Сертификат ===
+from aiogram.types import FSInputFile
+from app.bot.keyboards import kb_main  # <--- Убедитесь, что импортировали это
+
+
 @router.callback_query(Reg.confirm, F.data == "confirm_yes")
 async def reg_final(call: CallbackQuery, state: FSMContext):
     data = await state.get_data()
+    # Получаем язык, чтобы меню было на правильном языке
+    lang = data.get('language', 'ru')
 
-    # 1. Сохраняем в БД
+    # 1. Сохраняем в БД (Ваш код)
     async with SessionLocal() as s:
-        # Обновляем телефон у User
+        # Обновляем телефон
         q = await s.execute(select(User).where(User.tg_id == call.from_user.id))
         user = q.scalar_one()
         user.phone = data['phone']
 
-        # Создаем или обновляем Profile
+        # Создаем/Обновляем профиль
         q2 = await s.execute(select(Profile).where(Profile.user_id == user.id))
         prof = q2.scalar_one_or_none()
 
@@ -199,30 +205,35 @@ async def reg_final(call: CallbackQuery, state: FSMContext):
 
         await s.commit()
 
-    # 2. Генерация сертификата
-    await call.message.edit_text("⏳ Генерируем ваш сертификат...")
+    # 2. Удаляем старое сообщение с кнопками "Подтвердить/Отмена", чтобы было чисто
+    await call.message.delete()
+
+    # Отправляем "Генерируем...", чтобы юзер не скучал
+    wait_msg = await call.message.answer("⏳ Генерируем сертификат...")
 
     try:
+        # Генерируем файл
         cert_path = await ensure_certificate_and_get_path(tg_id=call.from_user.id)
 
-        # 3. Отправка (Используем FSInputFile!)
-        document = FSInputFile(cert_path)
+        # Удаляем "Генерируем..."
+        await wait_msg.delete()
 
-        await call.message.delete()  # Удаляем "Генерируем..."
-
+        # === 3. ОТПРАВЛЯЕМ ПОЗДРАВЛЕНИЕ И МЕНЮ ===
+        # Вот здесь мы заменяем кнопку "Поделиться номером" на "Главное меню"
         await call.message.answer(
             "Поздравляем! Регистрация успешно завершена! 🎉\nВы приняты в сообщество.",
-            reply_markup=InlineKeyboardMarkup(
-                inline_keyboard=[
-                    [InlineKeyboardButton(text="Посмотреть сертификат 🪪", callback_data="view_certificate")]
-                ]
-            )
+            reply_markup=kb_main(is_registered=True, lang=lang)  # <--- ГЛАВНОЕ ИЗМЕНЕНИЕ
         )
-        # Сразу кидаем файл
-        await call.message.answer_document(document, caption="Ваш сертификат готов!")
+
+        # 4. Отправляем сам сертификат
+        document = FSInputFile(cert_path)
+        await call.message.answer_document(
+            document,
+            caption="Ваш сертификат готов! 🪪"
+        )
 
     except Exception as e:
-        await call.message.answer(f"Произошла ошибка при создании сертификата: {e}")
+        await call.message.answer(f"Ошибка при создании сертификата: {e}")
 
     await state.clear()
     await call.answer()

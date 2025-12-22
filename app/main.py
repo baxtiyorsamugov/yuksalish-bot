@@ -2,7 +2,7 @@ import asyncio
 from aiogram import Bot, Dispatcher
 from app.config import BOT_TOKEN
 # from config import BOT_TOKEN
-from app.bot.handlers import start, registration, admin
+from app.bot.handlers import start, registration, admin, about
 
 
 
@@ -13,6 +13,7 @@ async def main():
     dp.include_router(admin.router)
     dp.include_router(start.router)
     dp.include_router(registration.router)
+    dp.include_router(about.router)
 
     await dp.start_polling(bot)
 
