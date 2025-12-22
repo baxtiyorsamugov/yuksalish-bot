@@ -106,3 +106,32 @@ def get_spheres_keyboard(spheres_list, lang='ru'):
 
     builder.adjust(1)  # Сферы в 1 колонку (обычно названия длинные)
     return builder.as_markup()
+
+
+def kb_events_list(events):
+    builder = InlineKeyboardBuilder()
+    for event in events:
+        # Кнопка с названием мероприятия
+        builder.row(InlineKeyboardButton(text=f"📅 {event.title}", callback_data=f"evt_view_{event.id}"))
+    return builder.as_markup()
+
+
+# Кнопки управления конкретным мероприятием
+def kb_event_actions(event_id, is_registered=False, status=None):
+    builder = InlineKeyboardBuilder()
+
+    if not is_registered:
+        # Если еще не записан -> Кнопка "Участвовать"
+        builder.row(InlineKeyboardButton(text="✍️ Подать заявку", callback_data=f"evt_reg_{event_id}"))
+    else:
+        # Если уже записан -> Показываем статус
+        if status == "approved":
+            # Если одобрено -> Можно скачать программу
+            builder.row(InlineKeyboardButton(text="📥 Скачать программу/Инфо", callback_data=f"evt_prog_{event_id}"))
+        elif status == "pending":
+            builder.row(InlineKeyboardButton(text="⏳ Заявка на рассмотрении", callback_data="ignore"))
+        elif status == "rejected":
+            builder.row(InlineKeyboardButton(text="❌ Заявка отклонена", callback_data="ignore"))
+
+    builder.row(InlineKeyboardButton(text="⬅️ Назад", callback_data="evt_back"))
+    return builder.as_markup()

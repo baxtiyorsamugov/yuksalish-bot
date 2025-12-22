@@ -6,14 +6,16 @@ sys.path.append(os.getcwd())
 
 import uvicorn
 from fastapi import FastAPI
-from sqladmin import Admin, ModelView
+from sqladmin import Admin, ModelView, action
 from sqladmin.authentication import AuthenticationBackend
 from starlette.requests import Request
 from starlette.responses import RedirectResponse
-
+import shutil  # <--- Нужно для сохранения файла
+import time    # <--- Нужно для генерации уникального имени
+from wtforms.fields import FileField
 # Импорт вашей БД и Моделей
-from app.db.session import engine
-from app.db.models import User, Profile, Region, Sphere, Certificate
+from app.db.session import engine, SessionLocal
+from app.db.models import User, Profile, Region, Sphere, Certificate, Event, EventRegistration
 
 
 # === НАСТРОЙКА БЕЗОПАСНОСТИ ===
@@ -70,12 +72,12 @@ class ProfileAdmin(ModelView, model=Profile):
     # === ИСПРАВЛЕНИЕ ЗДЕСЬ ===
     # Используем Profile.region вместо Region.name_ru
     # SQLAdmin сам поймет, что это связь, и сделает выпадающий список
-    column_filters = [
-        Profile.region_id,   # Было Profile.region -> Стало Profile.region_id
-        Profile.sphere_id,   # Было Profile.sphere -> Стало Profile.sphere_id
-        Profile.gender,
-        Profile.birth_year
-    ]
+    # column_filters = [
+    #     Profile.region_id,   # Было Profile.region -> Стало Profile.region_id
+    #     Profile.sphere_id,   # Было Profile.sphere -> Стало Profile.sphere_id
+    #     Profile.gender,
+    #     Profile.birth_year
+    # ]
 
     column_details_list = "__all__"
     can_create = False
@@ -97,10 +99,10 @@ class CertificateAdmin(ModelView, model=Certificate):
     ]
 
     # !!! В ФИЛЬТРАХ ОБЪЕКТЫ !!!
-    column_filters = [
-        Certificate.issued_at,
-        Certificate.member_code
-    ]
+    # column_filters = [
+    #     Certificate.issued_at,
+    #     Certificate.member_code
+    # ]
 
     column_searchable_list = ["member_code", "user.last_name"]
 
@@ -120,6 +122,122 @@ class SphereAdmin(ModelView, model=Sphere):
     column_list = ["id", "name_ru", "name_uz"]
 
 
+# 1. Админка Мероприятий
+# 1. Админка Мероприятий
+class EventAdmin(ModelView, model=Event):
+    name = "Мероприятие"
+    name_plural = "📅 Мероприятия"
+    icon = "fa-solid fa-calendar"
+
+    # ИСПРАВЛЕНИЕ: Используем СТРОКИ ("id", "title"...), а не объекты (Event.id)
+    column_list = ["id", "title", "date_event", "status"]
+
+    column_searchable_list = ["title"]
+
+    # === 1. МЕНЯЕМ ОБЫЧНОЕ ПОЛЕ НА ПОЛЕ ЗАГРУЗКИ ФАЙЛА ===
+    form_overrides = dict(program_file=FileField)
+
+    # Красивая подпись для поля
+    form_args = dict(program_file=dict(label="Файл программы (PDF/Word/Картинка)"))
+
+    # В фильтрах оставляем ОБЪЕКТЫ
+  #  column_filters = [Event.status, Event.date_event]
+
+    form_columns = ["title", "description", "date_event", "location", "status", "program_file"]
+
+    # === 2. ЛОГИКА СОХРАНЕНИЯ ФАЙЛА ===
+    async def on_model_change(self, data, model, is_created, request):
+        # Получаем объект файла из формы
+        file_object = data.get("program_file")
+
+        # Проверяем, загрузил ли админ новый файл
+        # (у file_object должен быть атрибут filename и он не должен быть пустым)
+        if file_object and hasattr(file_object, "filename") and file_object.filename:
+            # Генерируем уникальное имя (добавляем время), чтобы файлы не затерли друг друга
+            # Пример: 17055555_program.pdf
+            unique_name = f"{int(time.time())}_{file_object.filename}"
+            save_path = os.path.join(UPLOAD_DIR, unique_name)
+
+            # Сохраняем файл на диск
+            with open(save_path, "wb") as buffer:
+                shutil.copyfileobj(file_object.file, buffer)
+
+            # ЗАПИСЫВАЕМ В БАЗУ ПУТЬ К ФАЙЛУ (строку)
+            model.program_file = save_path
+
+        # Если файл не загружен, но мы редактируем, старый путь останется в model.program_file сам по себе
+
+# 2. Админка Регистраций (Модерация)
+# 2. Админка Регистраций (Модерация)
+class EventRegistrationAdmin(ModelView, model=EventRegistration):
+    name = "Заявка"
+    name_plural = "📝 Заявки на участие"
+    icon = "fa-solid fa-clipboard-check"
+
+    column_list = [
+        "id",
+        "user.first_name",
+        "user.last_name",
+        "user.phone",
+        "event.title",
+        "status",
+        "created_at"
+    ]
+
+    # === ОТКЛЮЧАЕМ ФИЛЬТРЫ, ЧТОБЫ НЕ БЫЛО ОШИБОК ===
+    # column_filters = [EventRegistration.status, EventRegistration.event_id]
+
+    can_create = False
+    can_edit = True
+    can_delete = True
+
+    # === ДЕЙСТВИЕ 1: ОДОБРИТЬ ===
+    @action(
+        name="approve",
+        label="✅ Одобрить",
+        confirmation_message="Вы уверены, что хотите одобрить выбранные заявки?",
+        add_in_detail=True,
+        add_in_list=True
+    )
+    async def approve_users(self, request: Request):
+        # Получаем ID выбранных строк
+        pks = request.query_params.get("pks", "").split(",")
+
+        if pks:
+            async with SessionLocal() as session:
+                for pk in pks:
+                    # Находим заявку и меняем статус
+                    model = await session.get(EventRegistration, int(pk))
+                    if model:
+                        model.status = "approved"
+                        session.add(model)
+                await session.commit()
+
+        # Обновляем страницу
+        return RedirectResponse(request.url_for("admin:list", identity=self.identity))
+
+    # === ДЕЙСТВИЕ 2: ОТКЛОНИТЬ ===
+    @action(
+        name="reject",
+        label="❌ Отклонить",
+        confirmation_message="Отклонить выбранные заявки?",
+        add_in_detail=True,
+        add_in_list=True
+    )
+    async def reject_users(self, request: Request):
+        pks = request.query_params.get("pks", "").split(",")
+
+        if pks:
+            async with SessionLocal() as session:
+                for pk in pks:
+                    model = await session.get(EventRegistration, int(pk))
+                    if model:
+                        model.status = "rejected"
+                        session.add(model)
+                await session.commit()
+
+        return RedirectResponse(request.url_for("admin:list", identity=self.identity))
+
 # === ЗАПУСК ===
 def run_admin():
     app = FastAPI()
@@ -131,6 +249,8 @@ def run_admin():
     admin.add_view(CertificateAdmin)
     admin.add_view(RegionAdmin)
     admin.add_view(SphereAdmin)
+    admin.add_view(EventAdmin)
+    admin.add_view(EventRegistrationAdmin)
 
     print("🚀 Админ-панель запущена: http://127.0.0.1:8000/admin")
     uvicorn.run(app, host="0.0.0.0", port=8000)

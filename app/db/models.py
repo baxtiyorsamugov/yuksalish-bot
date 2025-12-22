@@ -1,5 +1,5 @@
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from sqlalchemy import String, BigInteger, Integer, ForeignKey, DateTime, func
+from sqlalchemy import String, BigInteger, Integer, ForeignKey, DateTime, func, Text
 
 
 class Base(DeclarativeBase):
@@ -69,3 +69,40 @@ class Sphere(Base):
     name_en: Mapped[str] = mapped_column(String(128), nullable=False)
 
     profiles: Mapped[list["Profile"]] = relationship("Profile", back_populates="sphere")
+
+
+class Event(Base):
+    __tablename__ = "events"
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(Text)
+    date_event: Mapped[DateTime] = mapped_column(DateTime)  # Дата проведения
+    location: Mapped[str] = mapped_column(String(255))
+
+    # Файл программы (можно хранить file_id от телеграма или путь к файлу)
+    program_file: Mapped[str | None] = mapped_column(String(255))
+
+    status: Mapped[str] = mapped_column(String(20), default="active")  # active, closed
+    created_at = mapped_column(DateTime, server_default=func.now())
+
+    # Связь с регистрациями
+    registrations: Mapped[list["EventRegistration"]] = relationship("EventRegistration", back_populates="event")
+
+    def __str__(self):
+        return self.title
+
+
+class EventRegistration(Base):
+    __tablename__ = "registrations"
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"))
+    event_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("events.id"))
+
+    # Статусы: pending (ждет), approved (принят), rejected (отказ)
+    status: Mapped[str] = mapped_column(String(20), default="pending")
+    created_at = mapped_column(DateTime, server_default=func.now())
+
+    # Связи
+    user: Mapped["User"] = relationship("User")
+    event: Mapped["Event"] = relationship("Event", back_populates="registrations")
