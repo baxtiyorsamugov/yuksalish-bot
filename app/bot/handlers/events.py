@@ -10,7 +10,7 @@ router = Router()
 
 
 # 1. Показать список активных мероприятий
-@router.message(F.text == "🎫 Мероприятия")
+@router.message(F.text.in_(["Мероприятия", "Tadbirlar"]))
 @router.callback_query(F.data == "evt_back")
 async def show_events(update: types.Message | types.CallbackQuery):
     # Универсальная функция (работает и от кнопки, и от сообщения)
@@ -142,42 +142,58 @@ async def download_program(call: types.CallbackQuery):
 
 
 # 5. Кнопка "Мои мероприятия" (История)
-@router.message(F.text == "📌 Мои мероприятия")
+@router.message(F.text.in_(["Мои мероприятия", "Mening tadbirlarim"]))
 async def my_events(message: types.Message):
     async with SessionLocal() as s:
+        # Получаем пользователя, чтобы узнать его язык
         user = (await s.execute(select(User).where(User.tg_id == message.from_user.id))).scalar_one()
+        lang = user.language if user.language else 'ru'  # Если языка нет, будет русский
 
-        # Получаем все регистрации юзера + данные о самом ивенте
-        # Join нужен, чтобы достать название мероприятия
+        # Получаем регистрации
         q = await s.execute(
             select(EventRegistration, Event)
             .join(Event, EventRegistration.event_id == Event.id)
             .where(EventRegistration.user_id == user.id)
             .order_by(EventRegistration.created_at.desc())
         )
-        results = q.all()  # Вернет список пар [(Reg, Event), (Reg, Event)...]
+        results = q.all()
+
+    # === СЛОВАРИ ПЕРЕВОДА ===
+    if lang == 'uz':
+        text_header = "<b>📌 Sizning tadbirlar tarixingiz:</b>\n\n"
+        text_empty = "Siz hali hech qanday tadbirda qatnashmagansiz."
+        # Перевод статусов
+        status_names = {
+            "pending": "⏳ Ko‘rib chiqilmoqda",
+            "approved": "✅ Tasdiqlangan",
+            "rejected": "❌ Rad etilgan"
+        }
+    else:
+        text_header = "<b>📌 Ваша история мероприятий:</b>\n\n"
+        text_empty = "Вы пока не участвовали ни в одном мероприятии."
+        status_names = {
+            "pending": "⏳ На рассмотрении",
+            "approved": "✅ Одобрено",
+            "rejected": "❌ Отклонено"
+        }
 
     if not results:
-        await message.answer("Вы пока не участвовали ни в одном мероприятии.")
+        await message.answer(text_empty)
         return
 
-    text = "<b>📌 Ваша история мероприятий:</b>\n\n"
-
+    text = text_header
     builder = InlineKeyboardBuilder()
 
     for reg, event in results:
-        status_emoji = {
-            "pending": "⏳",
-            "approved": "✅",
-            "rejected": "❌"
-        }.get(reg.status, "❓")
+        # Получаем красивый статус на нужном языке
+        status_text = status_names.get(reg.status, reg.status)
 
-        # Текст для списка
-        text += f"{status_emoji} <b>{event.title}</b> ({reg.status})\n"
+        # Текст сообщения: "Название (Статус)"
+        text += f"🔹 <b>{event.title}</b>\n   └ <i>{status_text}</i>\n\n"
 
-        # Добавляем кнопку для быстрого перехода к мероприятию
+        # Кнопка
         builder.row(InlineKeyboardButton(
-            text=f"{status_emoji} {event.title}",
+            text=f"{event.title}",
             callback_data=f"evt_view_{event.id}"
         ))
 

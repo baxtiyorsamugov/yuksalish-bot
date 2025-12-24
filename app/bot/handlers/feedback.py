@@ -10,7 +10,7 @@ router = Router()
 
 
 # 1. Нажатие на кнопку в меню
-@router.message(F.text.in_(["✍️ Обратная связь", "Feedback", "Aloqa"]))
+@router.message(F.text.in_(["✍️ Обратная связь", "✍️ Taklif va murojaat", "Feedback"]))
 async def feedback_start(message: Message, state: FSMContext):
     await state.clear()
     await message.answer(

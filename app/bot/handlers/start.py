@@ -16,7 +16,7 @@ router = Router()
 async def start(message: Message, state: FSMContext):
     await state.clear()
     await state.set_state(Reg.language)
-    await message.answer("Выберите язык / Tilni tanlang / Choose language:", reply_markup=kb_language())
+    await message.answer(" Tilni tanlang / Выберите язык:", reply_markup=kb_language())
 
 
 @router.callback_query(F.data.startswith("lang:"))

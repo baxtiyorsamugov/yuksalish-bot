@@ -117,32 +117,32 @@ def _render_certificate_png(path: str, full_name: str, member_code: str):
     # === БЛОК 1: ЛОГОТИПЫ (ВЕРХ) ===
     # Координаты подобраны под ширину 2000px
     # Лого ЕС (слева)
-    paste_image(bg, "logo_eu.png", x=150, y=100, width_target=250)
+    # paste_image(bg, "logo_eu.png", x=150, y=100, width_target=250)
 
     # Лого KAS (центр-лево)
-    paste_image(bg, "logo_kas.png", x=450, y=100, width_target=250)
+    # paste_image(bg, "logo_kas.png", x=450, y=100, width_target=250)
 
     # Лого Yuksalish (справа) - если его нет на фоне
-    paste_image(bg, "logo_yuksalish.png", x=1400, y=100, width_target=350)
+    # paste_image(bg, "logo_yuksalish.png", x=1400, y=100, width_target=350)
 
     # Лого 100 Community (по центру чуть ниже)
-    paste_image(bg, "logo_100.png", x=850, y=200, width_target=200)
+    # paste_image(bg, "logo_100.png", x=850, y=200, width_target=200)
 
     # === БЛОК 4: ИМЯ УЧАСТНИКА ===
     # Рисуем на высоте Y = 850
-    draw_centered_text(draw, full_name, font_name, 850, COLOR_DARK_BLUE, W)
+    draw_centered_text(draw, full_name, font_name, 550, COLOR_DARK_BLUE, W)
 
     # === БЛОК 2: ТЕКСТ ПОЗДРАВЛЕНИЯ ===
-    intro_text = (
-        "Tabriklaymiz, siz Yuksalish harakatiga a'zo bo'ldingiz. Birgalikda mamlakatimiz rivoji uchun hissa qo'shamiz."
-    )
-    # Рисуем на высоте Y = 500
-    draw_centered_text(draw, intro_text, font_body, 500, COLOR_TEXT, W, line_spacing=20)
+    # intro_text = (
+    #     "Tabriklaymiz, siz Yuksalish harakatiga a'zo bo'ldingiz. Birgalikda mamlakatimiz rivoji uchun hissa qo'shamiz."
+    # )
+    # # Рисуем на высоте Y = 500
+    # draw_centered_text(draw, intro_text, font_body, 500, COLOR_TEXT, W, line_spacing=20)
 
     # === БЛОК 3: ЗАГОЛОВОК SERTIFIKAT ===
     # Буквы в разрядку (с пробелами) для стиля
-    title = "S E R T I F I K A T"
-    draw_centered_text(draw, title, font_serif_title, 650, COLOR_DARK_BLUE, W)
+    # title = "S E R T I F I K A T"
+    # draw_centered_text(draw, title, font_serif_title, 650, COLOR_DARK_BLUE, W)
 
 
 
@@ -159,27 +159,49 @@ def _render_certificate_png(path: str, full_name: str, member_code: str):
     #                    W)
 
     # === БЛОК 6: QR КОД (СПРАВА ВНИЗУ) ===
-    qr_size = 220
-    qr = qrcode.make(member_code).convert("RGBA").resize((qr_size, qr_size))
+    # qr_size = 220
+    # qr = qrcode.make(member_code).convert("RGBA").resize((qr_size, qr_size))
 
     # Позиция: отступ 100px справа и снизу
-    qr_x = W - qr_size - 100
-    qr_y = H - qr_size - 120
+    # qr_x = W - qr_size - 100
+    # qr_y = H - qr_size - 120
 
     # Белая подложка под QR (чтобы не сливался с фоном)
-    qr_bg = Image.new("RGBA", (qr_size + 20, qr_size + 20), "white")
-    bg.alpha_composite(qr_bg, dest=(qr_x - 10, qr_y - 10))
-    bg.alpha_composite(qr, dest=(qr_x, qr_y))
+    # qr_bg = Image.new("RGBA", (qr_size + 20, qr_size + 20), "white")
+    # bg.alpha_composite(qr_bg, dest=(qr_x - 10, qr_y - 10))
+    # bg.alpha_composite(qr, dest=(qr_x, qr_y))
 
     # Надпись "Modular" под QR
-    draw.text((qr_x + 60, qr_y + qr_size + 10), "Modullar", font=font_small, fill="black")
+    # draw.text((qr_x + 60, qr_y + qr_size + 10), "Modullar", font=font_small, fill="black")
 
     # === БЛОК 7: ID и ДАТА (СЛЕВА ВНИЗУ) ===
     # Позиция: слева внизу, на уровне QR
-    info_x = 100
-    info_y = H - 150
-    draw.text((info_x, info_y), f"ID raqami: {member_code}", font=font_small, fill=COLOR_GREY)
-    draw.text((info_x, info_y + 40), f"Sana: {datetime.now().strftime('%d.%m.%Y')}", font=font_small, fill=COLOR_GREY)
+    # 1. Координата X = Ровно центр картинки
+    center_x = W / 2
+
+    # 2. Координата Y = Отступ снизу
+    # H - 220 поднимет текст над нижним узором (ракетой/орнаментом)
+    start_y = H - 220
+
+    # Рисуем ID
+    draw.text(
+        (center_x, start_y),
+        f"ID raqami: {member_code}",
+        font=font_small,
+        fill=COLOR_GREY,
+        anchor="mm",  # <--- mm = Middle Middle (Центр текста совпадает с точкой)
+        align="center"
+    )
+
+    # Рисуем Дату (ниже ID на 40 пикселей)
+    draw.text(
+        (center_x, start_y + 40),
+        f"Sana: {datetime.now().strftime('%d.%m.%Y')}",
+        font=font_small,
+        fill=COLOR_GREY,
+        anchor="mm",  # <--- Центрирование
+        align="center"
+    )
 
     # Сохранение
     bg.convert("RGB").save(path, "PNG")

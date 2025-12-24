@@ -45,7 +45,7 @@ VIDEO_ID = "BAACAgIAAxkBAAIDWWlI7DA4gRrFX2rus7RAu2Bu8JVZAALsiAACiMdJSnoQ4wMOhZnE
 # === ХЕНДЛЕРЫ ===
 
 # 1. Главная кнопка меню
-@router.message(F.text == "ℹ️ О движении")
+@router.message(F.text.in_(["О движении", "Harakat haqida"]))
 async def show_about_section(message: types.Message):
     # Отправляем видео по ID (это мгновенно и без лимитов по размеру)
     await message.answer_video(

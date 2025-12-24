@@ -3,14 +3,41 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeybo
 
 def kb_language():
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Русский", callback_data="lang:ru"),
-         InlineKeyboardButton(text="O‘zbek", callback_data="lang:uz"),
-         InlineKeyboardButton(text="English", callback_data="lang:en")]
+        [
+        InlineKeyboardButton(text="O‘zbek", callback_data="lang:uz"),
+         InlineKeyboardButton(text="Русский", callback_data="lang:ru")
+
+         # InlineKeyboardButton(text="English", callback_data="lang:en")
+        ]
     ])
 
 # === ОБНОВЛЕННОЕ ГЛАВНОЕ МЕНЮ ===
 def kb_main(is_registered=False, lang="ru"):
     builder = ReplyKeyboardBuilder()
+
+    # Словарь с текстами кнопок
+    # Вы можете поменять переводы на свой вкус
+    texts = {
+        "ru": {
+            "events": "Мероприятия",
+            "my_events": "Мои мероприятия",
+            "about": "О движении",
+            "cert": "Сертификат",
+            "reg": "Регистрация",
+            "feedback": "✍️ Обратная связь"
+        },
+        "uz": {
+            "events": "Tadbirlar",
+            "my_events": "Mening tadbirlarim",
+            "about": "Harakat haqida",
+            "cert": "Sertifikat",
+            "reg": "Ro‘yxatdan o‘tish",
+            "feedback": "✍️ Taklif va murojaat" # Или "Taklif va murojaat"
+        }
+    }
+
+    # Выбираем нужный язык (если lang неизвестен, берем 'ru')
+    t = texts.get(lang, texts["ru"])
 
     # Текст для кнопки регистрации в зависимости от языка
     reg_text = "Регистрация"
@@ -21,27 +48,27 @@ def kb_main(is_registered=False, lang="ru"):
 
     # 1 ряд: Мероприятия (всегда видны)
     builder.row(
-        KeyboardButton(text="🎫 Мероприятия"),
-        KeyboardButton(text="📌 Мои мероприятия")
+        KeyboardButton(text=t["events"]),
+        KeyboardButton(text=t["my_events"])
     )
 
     # 2 ряд: О ДВИЖЕНИИ + СЕРТИФИКАТ (Условие!)
     if is_registered:
         # Если зарегистрирован: Показываем и "О движении", и "Сертификат"
         builder.row(
-            KeyboardButton(text="ℹ️ О движении"),
-            KeyboardButton(text="Сертификат")
+            KeyboardButton(text=t["about"]),
+            KeyboardButton(text=t["cert"])
         )
     else:
         # Если НЕ зарегистрирован: Показываем только "О движении"
-        builder.row(KeyboardButton(text="ℹ️ О движении"))
+        builder.row(KeyboardButton(text=t["about"]))
 
     # 3 ряд: РЕГИСТРАЦИЯ (Только если НЕ зарегистрирован)
     if not is_registered:
         builder.row(KeyboardButton(text=reg_text))
 
     # 4 ряд: Настройки
-    builder.row(KeyboardButton(text="✍️ Обратная связь"))
+    builder.row(KeyboardButton(text=t["feedback"]))
 
     return builder.as_markup(resize_keyboard=True)
 

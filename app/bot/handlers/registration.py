@@ -15,7 +15,7 @@ router = Router()
 
 
 # === 1. Обработчик кнопки "Сертификат" ===
-@router.message(F.text == "Сертификат")
+@router.message(F.text.in_(["Сертификат", "Sertifikat"]))
 async def send_certificate_btn(message: Message, state: FSMContext):
     cert_path = await ensure_certificate_and_get_path(tg_id=message.from_user.id)
     document = FSInputFile(cert_path)
