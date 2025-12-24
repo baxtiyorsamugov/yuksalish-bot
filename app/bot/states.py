@@ -2,6 +2,7 @@ from aiogram.fsm.state import State, StatesGroup
 
 class Reg(StatesGroup):
     language = State()  # Выбор языка
+    full_name = State()
     region = State()  # Регион
     sphere = State()  # Сфера деятельности
     birth_year = State()  # Год рождения

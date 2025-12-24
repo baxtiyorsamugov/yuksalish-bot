@@ -25,35 +25,70 @@ async def send_certificate_btn(message: Message, state: FSMContext):
 # === 2. Старт регистрации ===
 @router.message(F.text.in_(["Регистрация", "Ro‘yxatdan o‘tish", "Registration"]))
 async def reg_start(message: Message, state: FSMContext):
-    # Проверка: есть ли уже профиль?
+    # Проверка, если уже зарегистрирован (Ваш код проверки БД)
     async with SessionLocal() as session:
-        # Находим юзера по tg_id
         q_user = await session.execute(select(User).where(User.tg_id == message.from_user.id))
         user = q_user.scalar_one_or_none()
-
         if user:
-            # Проверяем профиль
             q_prof = await session.execute(select(Profile).where(Profile.user_id == user.id))
             prof = q_prof.scalar_one_or_none()
             if prof:
-                await message.answer("Вы уже зарегистрированы ✅")
+                # Если профиль есть, отвечаем на нужном языке (можно упростить)
+                await message.answer("Вы уже зарегистрированы / Siz allaqachon ro‘yxatdan o‘tgansiz ✅")
                 return
 
-    # Если профиля нет, начинаем регистрацию
-    # Получаем список регионов
-    regions = await get_all_regions()
+    # === ИСПРАВЛЕНИЕ: ОПРЕДЕЛЯЕМ ЯЗЫК ПО КНОПКЕ ===
+    if message.text == "Ro‘yxatdan o‘tish":
+        lang = "uz"
+    elif message.text == "Registration":
+        lang = "en"
+    else:
+        lang = "ru"
 
-    if not regions:
-        await message.answer("Ошибка: Список регионов пуст. Обратитесь к администратору.")
+    # ВАЖНО: Сохраняем язык в память, чтобы следующие шаги (регион, сфера) тоже были на этом языке
+    await state.update_data(language=lang)
+
+    # Выдаем текст на нужном языке
+    if lang == 'uz':
+        text = "Iltimos, <b>Ism va Familiyangizni</b> kiriting:\n(Masalan: Baxtiyor Samugov)"
+    elif lang == 'en':
+        text = "Please enter your <b>First and Last Name</b>:\n(Example: John Doe)"
+    else:
+        text = "Пожалуйста, введите ваши <b>Имя и Фамилию</b>:\n(Например: Бахтиёр Самугов)"
+
+    await state.set_state(Reg.full_name)
+    await message.answer(text, parse_mode="HTML")
+
+
+# 2. НОВЫЙ ХЕНДЛЕР: ПОЛУЧАЕМ ИМЯ И СПРАШИВАЕМ РЕГИОН
+@router.message(Reg.full_name)
+async def reg_name_entered(message: Message, state: FSMContext):
+    # Простая валидация: имя не должно быть слишком коротким
+    if not message.text or len(message.text) < 3:
+        await message.answer("Пожалуйста, введите реальное имя.")
         return
 
-    # Записываем язык (если есть логика выбора языка, добавьте сюда. Пока 'ru')
-    await state.update_data(language='ru')
+    # Сохраняем имя в память
+    # Мы сделаем Title Case (Первая буква большая), чтобы было красиво
+    full_name = message.text.strip().title()
+    await state.update_data(full_name=full_name)
+
+    # === ТЕПЕРЬ ПЕРЕХОДИМ К РЕГИОНАМ (Как было раньше) ===
+    regions = await get_all_regions()
+
+    # Получаем язык
+    data = await state.get_data()
+    lang = data.get('language', 'ru')
+
+    if lang == 'uz':
+        text = "Yashash hududingizni tanlang:"
+    else:
+        text = "Выберите регион проживания:"
 
     await state.set_state(Reg.region)
     await message.answer(
-        "Выберите регион проживания:",
-        reply_markup=get_regions_keyboard(regions, lang='ru')
+        text,
+        reply_markup=get_regions_keyboard(regions, lang=lang)
     )
 
 
@@ -174,17 +209,31 @@ from app.bot.keyboards import kb_main  # <--- Убедитесь, что имп�
 @router.callback_query(Reg.confirm, F.data == "confirm_yes")
 async def reg_final(call: CallbackQuery, state: FSMContext):
     data = await state.get_data()
-    # Получаем язык, чтобы меню было на правильном языке
     lang = data.get('language', 'ru')
 
-    # 1. Сохраняем в БД (Ваш код)
+    # Достаем введенное имя
+    full_name_input = data.get("full_name", "Unknown")
+
     async with SessionLocal() as s:
-        # Обновляем телефон
+        # Получаем пользователя
         q = await s.execute(select(User).where(User.tg_id == call.from_user.id))
         user = q.scalar_one()
+
+        # === ОБНОВЛЯЕМ ИМЯ В БАЗЕ ДАННЫХ ===
+        # Мы заменяем то, что пришло от Телеграма, на то, что ввел юзер
+        # Попробуем разделить на Имя и Фамилию
+        parts = full_name_input.split()
+        if len(parts) >= 2:
+            user.first_name = parts[0]
+            user.last_name = " ".join(parts[1:])  # Всё остальное в фамилию
+        else:
+            user.first_name = full_name_input
+            user.last_name = ""
+
+        # Обновляем телефон
         user.phone = data['phone']
 
-        # Создаем/Обновляем профиль
+        # Сохраняем профиль
         q2 = await s.execute(select(Profile).where(Profile.user_id == user.id))
         prof = q2.scalar_one_or_none()
 
