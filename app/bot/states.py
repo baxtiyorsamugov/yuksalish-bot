@@ -9,3 +9,7 @@ class Reg(StatesGroup):
     phone = State()  # Телефон
     confirm = State()  # Подтверждение данных
     consent = State()  # Согласие (если нужно)
+
+class FeedbackState(StatesGroup):
+    waiting_for_type = State()    # Ждем выбора кнопки
+    waiting_for_message = State() # Ждем текста сообщения

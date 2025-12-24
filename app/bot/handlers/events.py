@@ -182,3 +182,41 @@ async def my_events(message: types.Message):
         ))
 
     await message.answer(text, reply_markup=builder.as_markup(), parse_mode="HTML")
+
+
+# 6. Обработка оценки (Рейтинг)
+@router.callback_query(F.data.startswith("rate_"))
+async def process_rating(call: types.CallbackQuery):
+    # data имеет формат: rate_{event_id}_{score}
+    # Например: rate_5_5 (Ивент №5, Оценка 5)
+    parts = call.data.split("_")
+    event_id = int(parts[1])
+    score = int(parts[2])
+
+    async with SessionLocal() as s:
+        # 1. Находим пользователя в БД
+        q_user = await s.execute(select(User).where(User.tg_id == call.from_user.id))
+        user = q_user.scalar_one()
+
+        # 2. Находим его регистрацию на этот ивент
+        # Используем and_, чтобы найти совпадение и по юзеру, и по ивенту
+        q_reg = await s.execute(
+            select(EventRegistration)
+            .where(and_(
+                EventRegistration.event_id == event_id,
+                EventRegistration.user_id == user.id
+            ))
+        )
+        reg = q_reg.scalar_one_or_none()
+
+        if reg:
+            # 3. Записываем оценку
+            reg.rating = score
+            await s.commit()
+
+            # 4. Меняем сообщение на благодарность
+            await call.message.edit_text(f"Спасибо! Вы поставили оценку: {score} ⭐\nМы учтем ваше мнение.")
+        else:
+            await call.message.edit_text("Ошибка: не найдена ваша запись на это мероприятие.")
+
+    await call.answer()

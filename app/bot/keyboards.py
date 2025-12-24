@@ -41,7 +41,7 @@ def kb_main(is_registered=False, lang="ru"):
         builder.row(KeyboardButton(text=reg_text))
 
     # 4 ряд: Настройки
-    builder.row(KeyboardButton(text="⚙️ Настройки"))
+    builder.row(KeyboardButton(text="✍️ Обратная связь"))
 
     return builder.as_markup(resize_keyboard=True)
 
@@ -134,4 +134,14 @@ def kb_event_actions(event_id, is_registered=False, status=None):
             builder.row(InlineKeyboardButton(text="❌ Заявка отклонена", callback_data="ignore"))
 
     builder.row(InlineKeyboardButton(text="⬅️ Назад", callback_data="evt_back"))
+    return builder.as_markup()
+
+# === НОВАЯ КЛАВИАТУРА ДЛЯ ТИПОВ ОБРАЩЕНИЯ ===
+def kb_feedback_types():
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text="💡 Предложить идею", callback_data="feed_idea"))
+    builder.row(InlineKeyboardButton(text="❓ Задать вопрос", callback_data="feed_question"))
+    builder.row(InlineKeyboardButton(text="🤝 Сотрудничество", callback_data="feed_partnership"))
+    builder.row(InlineKeyboardButton(text="❌ Отмена", callback_data="feed_cancel"))
+    builder.adjust(1)
     return builder.as_markup()

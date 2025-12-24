@@ -101,6 +101,8 @@ class EventRegistration(Base):
 
     # Статусы: pending (ждет), approved (принят), rejected (отказ)
     status: Mapped[str] = mapped_column(String(20), default="pending")
+    rating: Mapped[int | None] = mapped_column(Integer)  # Оценка от 1 до 5
+
     created_at = mapped_column(DateTime, server_default=func.now())
 
     # Связи

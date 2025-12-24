@@ -3,7 +3,10 @@ import os
 
 # Фикс для импортов
 sys.path.append(os.getcwd())
-
+from aiogram import Bot
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from app.config import BOT_TOKEN
+from sqlalchemy import select
 import uvicorn
 from fastapi import FastAPI
 from sqladmin import Admin, ModelView, action
@@ -129,41 +132,88 @@ class EventAdmin(ModelView, model=Event):
     name_plural = "📅 Мероприятия"
     icon = "fa-solid fa-calendar"
 
-    # ИСПРАВЛЕНИЕ: Используем СТРОКИ ("id", "title"...), а не объекты (Event.id)
     column_list = ["id", "title", "date_event", "status"]
-
     column_searchable_list = ["title"]
 
-    # === 1. МЕНЯЕМ ОБЫЧНОЕ ПОЛЕ НА ПОЛЕ ЗАГРУЗКИ ФАЙЛА ===
+    # Включаем загрузку файлов (как мы делали раньше)
     form_overrides = dict(program_file=FileField)
-
-    # Красивая подпись для поля
-    form_args = dict(program_file=dict(label="Файл программы (PDF/Word/Картинка)"))
-
-    # В фильтрах оставляем ОБЪЕКТЫ
-  #  column_filters = [Event.status, Event.date_event]
-
+    form_args = dict(program_file=dict(label="Файл программы"))
     form_columns = ["title", "description", "date_event", "location", "status", "program_file"]
 
-    # === 2. ЛОГИКА СОХРАНЕНИЯ ФАЙЛА ===
-    async def on_model_change(self, data, model, is_created, request):
-        # Получаем объект файла из формы
-        file_object = data.get("program_file")
+    # === НОВОЕ: ВЫПАДАЮЩИЙ СПИСОК ДЛЯ СТАТУСА ===
+    form_choices = {
+        "status": [
+            ("active", "🟢 Активно"),
+            ("closed", "🏁 Завершено (Разослать опрос)"),
+            ("cancelled", "❌ Отменено")
+        ]
+    }
 
-        # Проверяем, загрузил ли админ новый файл
-        # (у file_object должен быть атрибут filename и он не должен быть пустым)
+    # === ЛОГИКА: Если статус стал 'closed', рассылаем опрос ===
+    async def on_model_change(self, data, model, is_created, request):
+        # 1. Сохранение файла (оставляем как было)
+        file_object = data.get("program_file")
         if file_object and hasattr(file_object, "filename") and file_object.filename:
-            # Генерируем уникальное имя (добавляем время), чтобы файлы не затерли друг друга
-            # Пример: 17055555_program.pdf
             unique_name = f"{int(time.time())}_{file_object.filename}"
             save_path = os.path.join(UPLOAD_DIR, unique_name)
-
-            # Сохраняем файл на диск
             with open(save_path, "wb") as buffer:
                 shutil.copyfileobj(file_object.file, buffer)
-
-            # ЗАПИСЫВАЕМ В БАЗУ ПУТЬ К ФАЙЛУ (строку)
             model.program_file = save_path
+
+        # 2. ПРОВЕРКА СТАТУСА: Если меняем на 'closed'
+        # data.get("status") - это новый статус, model.status - старый (или текущий)
+        new_status = data.get("status")
+
+        if new_status == "closed":
+            # Запускаем рассылку в фоне
+            await self.send_feedback_request(model)
+
+    async def send_feedback_request(self, event):
+        """Отправляет просьбу оценить мероприятие всем одобренным участникам"""
+        bot = Bot(token=BOT_TOKEN)
+
+        # Клавиатура с оценками
+        kb = InlineKeyboardMarkup(inline_keyboard=[
+            [
+                InlineKeyboardButton(text="1 😡", callback_data=f"rate_{event.id}_1"),
+                InlineKeyboardButton(text="2 ☹️", callback_data=f"rate_{event.id}_2"),
+                InlineKeyboardButton(text="3 😐", callback_data=f"rate_{event.id}_3"),
+                InlineKeyboardButton(text="4 🙂", callback_data=f"rate_{event.id}_4"),
+                InlineKeyboardButton(text="5 😍", callback_data=f"rate_{event.id}_5"),
+            ]
+        ])
+
+        async with SessionLocal() as session:
+            # Ищем всех, кто был APPROVED на это мероприятие
+            # Нам нужно подгрузить (join) таблицу User, чтобы взять tg_id
+            stmt = (
+                select(EventRegistration)
+                .where(EventRegistration.event_id == event.id)
+                .where(EventRegistration.status == "approved")
+            )
+            result = await session.execute(stmt)
+            registrations = result.scalars().all()
+
+            count = 0
+            for reg in registrations:
+                # Нам нужно получить tg_id пользователя.
+                # Можно сделать отдельный запрос или lazy load
+                user = await session.get(User, reg.user_id)
+                if user and user.tg_id:
+                    try:
+                        await bot.send_message(
+                            chat_id=user.tg_id,
+                            text=f"🏁 Мероприятие <b>«{event.title}»</b> завершено!\n\nПожалуйста, оцените его качество:",
+                            reply_markup=kb,
+                            parse_mode="HTML"
+                        )
+                        count += 1
+                    except Exception as e:
+                        print(f"Не удалось отправить юзеру {user.id}: {e}")
+
+            print(f"Рассылка опроса завершена. Отправлено: {count}")
+
+        await bot.session.close()
 
         # Если файл не загружен, но мы редактируем, старый путь останется в model.program_file сам по себе
 
