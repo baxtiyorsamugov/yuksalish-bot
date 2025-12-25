@@ -90,9 +90,15 @@ def kb_back_to_about():
     builder.row(InlineKeyboardButton(text="⬅️ Назад к описанию", callback_data="about_main"))
     return builder.as_markup()
 
-def kb_phone():
+
+def kb_phone(lang="ru"):
+    if lang == "uz":
+        text = "📱 Telefon raqamni yuborish"
+    else:
+        text = "📱 Поделиться номером"
+
     return ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text="📱 Поделиться номером", request_contact=True)]],
+        keyboard=[[KeyboardButton(text=text, request_contact=True)]],
         resize_keyboard=True, one_time_keyboard=True
     )
 
@@ -171,4 +177,18 @@ def kb_feedback_types():
     builder.row(InlineKeyboardButton(text="🤝 Сотрудничество", callback_data="feed_partnership"))
     builder.row(InlineKeyboardButton(text="❌ Отмена", callback_data="feed_cancel"))
     builder.adjust(1)
+    return builder.as_markup()
+
+
+def kb_gender(lang="ru"):
+    builder = InlineKeyboardBuilder()
+
+    if lang == 'uz':
+        builder.button(text="👨 Erkak", callback_data="gender_male")
+        builder.button(text="👩 Ayol", callback_data="gender_female")
+    else:
+        builder.button(text="👨 Мужской", callback_data="gender_male")
+        builder.button(text="👩 Женский", callback_data="gender_female")
+
+    builder.adjust(2)
     return builder.as_markup()

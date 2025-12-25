@@ -5,7 +5,7 @@ from sqlalchemy import select
 
 # Импорты из вашего проекта
 from app.bot.states import Reg
-from app.bot.keyboards import kb_phone, kb_confirm, get_regions_keyboard, get_spheres_keyboard, kb_main
+from app.bot.keyboards import kb_phone, kb_confirm, get_regions_keyboard, get_spheres_keyboard, kb_main, kb_gender
 from app.db.session import SessionLocal
 from app.db.models import User, Profile, Region, Sphere
 from app.db.repo import get_all_regions, get_all_spheres  # Новые функции запросов
@@ -118,22 +118,35 @@ async def reg_name_entered(message: Message, state: FSMContext):
 # === 3. Выбор региона (нажатие кнопки) ===
 @router.callback_query(F.data.startswith("reg_"), Reg.region)
 async def reg_region_chosen(call: CallbackQuery, state: FSMContext):
-    # reg_5 -> id=5
+    # 1. Сохраняем ID региона
     region_id = int(call.data.split("_")[1])
     await state.update_data(region_id=region_id)
 
-    # Получаем сферы
+    # 2. Получаем язык пользователя из памяти
+    data = await state.get_data()
+    lang = data.get('language', 'ru')
+
+    # 3. Получаем список сфер из БД
     spheres = await get_all_spheres()
 
-    # Красиво меняем старое сообщение
-    await call.message.edit_text("Регион принят ✅")
+    # 4. Определяем тексты сообщений
+    if lang == 'uz':
+        text_accepted = "Hudud tanlandi ✅"
+        text_ask_sphere = "Faoliyat sohangizni tanlang:"
+    else:
+        text_accepted = "Регион принят ✅"
+        text_ask_sphere = "Выберите сферу деятельности:"
 
-    # Отправляем кнопки сфер
+    # 5. Меняем старое сообщение (убираем кнопки регионов)
+    await call.message.edit_text(text_accepted)
+
+    # 6. Отправляем вопрос о сферах с ПРАВИЛЬНЫМ языком клавиатуры
     await call.message.answer(
-        "Выберите сферу деятельности:",
-        reply_markup=get_spheres_keyboard(spheres, lang='ru')
+        text_ask_sphere,
+        reply_markup=get_spheres_keyboard(spheres, lang=lang) # <--- Передаем lang
     )
 
+    # 7. Переключаем состояние
     await state.set_state(Reg.sphere)
     await call.answer()
 
@@ -141,45 +154,91 @@ async def reg_region_chosen(call: CallbackQuery, state: FSMContext):
 # === 4. Выбор сферы (нажатие кнопки) ===
 @router.callback_query(F.data.startswith("sph_"), Reg.sphere)
 async def reg_sphere_chosen(call: CallbackQuery, state: FSMContext):
+    # 1. Сохраняем ID сферы
     sphere_id = int(call.data.split("_")[1])
     await state.update_data(sphere_id=sphere_id)
 
-    await call.message.edit_text("Сфера принята ✅")
+    # 2. Получаем язык
+    data = await state.get_data()
+    lang = data.get('language', 'ru')
 
-    # Переходим к году рождения
+    # 3. Определяем тексты
+    if lang == 'uz':
+        text_accepted = "Soha tanlandi ✅"
+        text_ask_year = "Tug‘ilgan yilingiz? Masalan: 1998"
+    else:
+        text_accepted = "Сфера принята ✅"
+        text_ask_year = "Год рождения? Например: 1998"
+
+    # 4. Меняем сообщение с кнопками на текст подтверждения
+    await call.message.edit_text(text_accepted)
+
+    # 5. Переходим к следующему шагу (Год рождения)
     await state.set_state(Reg.birth_year)
-    await call.message.answer("Год рождения? Например: 1998")
+    await call.message.answer(text_ask_year)
+
     await call.answer()
 
 
 # === 5. Год рождения ===
 @router.message(Reg.birth_year)
 async def reg_birth(message: Message, state: FSMContext):
+    # Получаем язык
+    data = await state.get_data()
+    lang = data.get('language', 'ru')
+
+    # Тексты ошибок
+    if lang == 'uz':
+        err_num = "Iltimos, yilni raqamda kiriting."
+        err_range = "Xatolik. Iltimos, haqiqiy tug‘ilgan yilingizni kiriting (masalan, 1998)."
+        msg_gender = "Jinsingizni tanlang:"
+    else:
+        err_num = "Пожалуйста, введите год числом."
+        err_range = "Похоже на ошибку. Введите реальный год (например 1998)."
+        msg_gender = "Выберите ваш пол:"
+
+    # Проверка ввода
     try:
         y = int(message.text.strip())
-        if y < 1930 or y > 2015:
-            return await message.answer("Похоже на ошибку. Введите реальный год (например 1998).")
+        if y < 1930 or y > 2018:
+            return await message.answer(err_range)
         await state.update_data(birth_year=y)
     except ValueError:
-        return await message.answer("Пожалуйста, введите год числом.")
+        return await message.answer(err_num)
 
+    # Если всё ок — переходим к Полу и даем КНОПКИ
     await state.set_state(Reg.gender)
-    await message.answer("Ваш пол: напишите M (мужской) или F (женский)")
+    await message.answer(msg_gender, reply_markup=kb_gender(lang))
 
 
-# === 6. Пол ===
-@router.message(Reg.gender)
-async def reg_gender(message: Message, state: FSMContext):
-    g = message.text.strip().upper()
-    if g not in ["M", "F", "М", "Ж"]:  # Добавил русские буквы на всякий случай
-        return await message.answer("Введите M или F.")
-
-    # Нормализация
-    gender_code = "male" if g in ["M", "М"] else "female"
+# 2. ОБРАБОТКА ВЫБОРА ПОЛА (КНОПКИ)
+# Вместо @router.message используем @router.callback_query
+@router.callback_query(F.data.startswith("gender_"), Reg.gender)
+async def reg_gender_chosen(call: CallbackQuery, state: FSMContext):
+    # gender_male -> male
+    gender_code = call.data.split("_")[1]
     await state.update_data(gender=gender_code)
 
+    # Получаем язык
+    data = await state.get_data()
+    lang = data.get('language', 'ru')
+
+    # Удаляем сообщение с кнопками пола или меняем текст
+    if lang == 'uz':
+        text_accepted = "Qabul qilindi ✅"
+        text_phone = "Endi telefon raqamingizni yuboring (tugmani bosing):"
+    else:
+        text_accepted = "Принято ✅"
+        text_phone = "Теперь отправьте номер телефона (нажмите кнопку ниже):"
+
+    await call.message.edit_text(text_accepted)
+
+    # Переходим к телефону
     await state.set_state(Reg.phone)
-    await message.answer("Отправьте номер телефона, нажав кнопку ниже:", reply_markup=kb_phone())
+    # Кнопка телефона (kb_phone) — это Reply кнопка (внизу), она не зависит от языка в текущей реализации,
+    # но лучше бы ее тоже перевести (см. ниже совет)
+    await call.message.answer(text_phone, reply_markup=kb_phone(lang))
+    await call.answer()
 
 
 # === 7. Телефон и Предварительное сохранение ===
