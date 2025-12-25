@@ -160,32 +160,51 @@ def kb_events_list(events):
 
 
 # Кнопки управления конкретным мероприятием
-def kb_event_actions(event_id, is_registered=False, status=None):
+def kb_event_actions(event_id, is_registered=False, status=None, lang="ru"):
     builder = InlineKeyboardBuilder()
 
-    if not is_registered:
-        # Если еще не записан -> Кнопка "Участвовать"
-        builder.row(InlineKeyboardButton(text="✍️ Подать заявку", callback_data=f"evt_reg_{event_id}"))
+    # Тексты кнопок
+    if lang == 'uz':
+        btn_reg = "✍️ Ariza topshirish"
+        btn_prog = "📥 Dasturni yuklab olish"
+        btn_pend = "⏳ Ariza ko‘rib chiqilmoqda"
+        btn_rej = "❌ Ariza rad etildi"
+        btn_back = "⬅️ Ortga"
     else:
-        # Если уже записан -> Показываем статус
-        if status == "approved":
-            # Если одобрено -> Можно скачать программу
-            builder.row(InlineKeyboardButton(text="📥 Скачать программу/Инфо", callback_data=f"evt_prog_{event_id}"))
-        elif status == "pending":
-            builder.row(InlineKeyboardButton(text="⏳ Заявка на рассмотрении", callback_data="ignore"))
-        elif status == "rejected":
-            builder.row(InlineKeyboardButton(text="❌ Заявка отклонена", callback_data="ignore"))
+        btn_reg = "✍️ Подать заявку"
+        btn_prog = "📥 Скачать программу/Инфо"
+        btn_pend = "⏳ Заявка на рассмотрении"
+        btn_rej = "❌ Заявка отклонена"
+        btn_back = "⬅️ Назад"
 
-    builder.row(InlineKeyboardButton(text="⬅️ Назад", callback_data="evt_back"))
+    if not is_registered:
+        builder.row(InlineKeyboardButton(text=btn_reg, callback_data=f"evt_reg_{event_id}"))
+    else:
+        if status == "approved":
+            builder.row(InlineKeyboardButton(text=btn_prog, callback_data=f"evt_prog_{event_id}"))
+        elif status == "pending":
+            builder.row(InlineKeyboardButton(text=btn_pend, callback_data="ignore"))
+        elif status == "rejected":
+            builder.row(InlineKeyboardButton(text=btn_rej, callback_data="ignore"))
+
+    builder.row(InlineKeyboardButton(text=btn_back, callback_data="evt_back"))
     return builder.as_markup()
 
 # === НОВАЯ КЛАВИАТУРА ДЛЯ ТИПОВ ОБРАЩЕНИЯ ===
-def kb_feedback_types():
+def kb_feedback_types(lang="ru"):
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="💡 Предложить идею", callback_data="feed_idea"))
-    builder.row(InlineKeyboardButton(text="❓ Задать вопрос", callback_data="feed_question"))
-    builder.row(InlineKeyboardButton(text="🤝 Сотрудничество", callback_data="feed_partnership"))
-    builder.row(InlineKeyboardButton(text="❌ Отмена", callback_data="feed_cancel"))
+
+    if lang == 'uz':
+        builder.row(InlineKeyboardButton(text="💡 G‘oya taklif qilish", callback_data="feed_idea"))
+        builder.row(InlineKeyboardButton(text="❓ Savol berish", callback_data="feed_question"))
+        builder.row(InlineKeyboardButton(text="🤝 Hamkorlik", callback_data="feed_partnership"))
+        builder.row(InlineKeyboardButton(text="❌ Bekor qilish", callback_data="feed_cancel"))
+    else:
+        builder.row(InlineKeyboardButton(text="💡 Предложить идею", callback_data="feed_idea"))
+        builder.row(InlineKeyboardButton(text="❓ Задать вопрос", callback_data="feed_question"))
+        builder.row(InlineKeyboardButton(text="🤝 Сотрудничество", callback_data="feed_partnership"))
+        builder.row(InlineKeyboardButton(text="❌ Отмена", callback_data="feed_cancel"))
+
     builder.adjust(1)
     return builder.as_markup()
 
