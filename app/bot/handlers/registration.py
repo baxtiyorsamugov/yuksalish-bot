@@ -10,6 +10,8 @@ from app.db.session import SessionLocal
 from app.db.models import User, Profile, Region, Sphere
 from app.db.repo import get_all_regions, get_all_spheres  # Новые функции запросов
 from app.services.certificate import ensure_certificate_and_get_path
+from app.services.validator import validate_fullname
+
 
 router = Router()
 
@@ -63,22 +65,43 @@ async def reg_start(message: Message, state: FSMContext):
 # 2. НОВЫЙ ХЕНДЛЕР: ПОЛУЧАЕМ ИМЯ И СПРАШИВАЕМ РЕГИОН
 @router.message(Reg.full_name)
 async def reg_name_entered(message: Message, state: FSMContext):
-    # Простая валидация: имя не должно быть слишком коротким
-    if not message.text or len(message.text) < 3:
-        await message.answer("Пожалуйста, введите реальное имя.")
-        return
-
-    # Сохраняем имя в память
-    # Мы сделаем Title Case (Первая буква большая), чтобы было красиво
-    full_name = message.text.strip().title()
-    await state.update_data(full_name=full_name)
-
-    # === ТЕПЕРЬ ПЕРЕХОДИМ К РЕГИОНАМ (Как было раньше) ===
-    regions = await get_all_regions()
-
-    # Получаем язык
+    # Получаем язык для ответов об ошибках
     data = await state.get_data()
     lang = data.get('language', 'ru')
+
+    # Запускаем проверку
+    validation = validate_fullname(message.text)
+
+    if not validation["valid"]:
+        error_code = validation["error"]
+
+        # Формируем текст ошибки в зависимости от языка
+        if lang == 'uz':
+            errors = {
+                "short": "Ism juda qisqa. Iltimos, to‘liq ismingizni kiriting.",
+                "long": "Ism juda uzun.",
+                "symbols": "Ismda faqat harflar bo‘lishi kerak (raqamlar va smayliklar mumkin emas).",
+                "bad_word": "Iltimos, haqiqiy ismingizni yozing. So‘kinish yoki noto‘g‘ri so‘zlar taqiqlangan."
+            }
+            msg = errors.get(error_code, "Noto‘g‘ri format.")
+        else:
+            errors = {
+                "short": "Имя слишком короткое. Введите полное имя.",
+                "long": "Имя слишком длинное.",
+                "symbols": "В имени должны быть только буквы (цифры и смайлики запрещены).",
+                "bad_word": "Пожалуйста, введите реальное имя. Некорректные слова запрещены."
+            }
+            msg = errors.get(error_code, "Неверный формат.")
+
+        await message.answer(f"❌ {msg}\n👇")
+        return
+
+    # Если всё хорошо — сохраняем чистое красивое имя (Title Case)
+    full_name = validation["clean_name"]
+    await state.update_data(full_name=full_name)
+
+    # === ДАЛЬШЕ ПЕРЕХОД К РЕГИОНАМ (Ваш старый код) ===
+    regions = await get_all_regions()
 
     if lang == 'uz':
         text = "Yashash hududingizni tanlang:"
