@@ -74,20 +74,30 @@ def kb_main(is_registered=False, lang="ru"):
 
 
 # === НОВЫЕ КНОПКИ ДЛЯ РАЗДЕЛА "О ДВИЖЕНИИ" ===
-def kb_about_menu():
-    """Кнопки под видео о движении"""
+def kb_about_menu(lang="ru"):
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="🎯 Направления", callback_data="about_directions"))
-    builder.row(InlineKeyboardButton(text="💼 Деятельность", callback_data="about_activity"))
-    builder.row(InlineKeyboardButton(text="🚀 Проекты", callback_data="about_projects"))
-    # Можно добавить ссылку на сайт или канал
-    builder.row(InlineKeyboardButton(text="🌐 Наш сайт", url="https://yuksalish.org"))
+
+    if lang == 'uz':
+        builder.row(InlineKeyboardButton(text="🎯 Yo‘nalishlar", callback_data="about_directions"))
+        builder.row(InlineKeyboardButton(text="💼 Faoliyat", callback_data="about_activity"))
+        builder.row(InlineKeyboardButton(text="🚀 Loyihalar", callback_data="about_projects"))
+        builder.row(InlineKeyboardButton(text="🌐 Saytimiz", url="https://yuksalish.uz"))
+    else:
+        builder.row(InlineKeyboardButton(text="🎯 Направления", callback_data="about_directions"))
+        builder.row(InlineKeyboardButton(text="💼 Деятельность", callback_data="about_activity"))
+        builder.row(InlineKeyboardButton(text="🚀 Проекты", callback_data="about_projects"))
+        builder.row(InlineKeyboardButton(text="🌐 Наш сайт", url="https://yuksalish.uz"))
+
+    builder.adjust(1)
     return builder.as_markup()
 
-def kb_back_to_about():
-    """Кнопка 'Назад' внутри раздела"""
+
+def kb_back_to_about(lang="ru"):
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="⬅️ Назад к описанию", callback_data="about_main"))
+    if lang == 'uz':
+        builder.row(InlineKeyboardButton(text="⬅️ Ortga", callback_data="about_main"))
+    else:
+        builder.row(InlineKeyboardButton(text="⬅️ Назад к описанию", callback_data="about_main"))
     return builder.as_markup()
 
 
