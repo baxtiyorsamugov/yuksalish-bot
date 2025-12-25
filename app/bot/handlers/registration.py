@@ -19,9 +19,30 @@ router = Router()
 # === 1. Обработчик кнопки "Сертификат" ===
 @router.message(F.text.in_(["Сертификат", "Sertifikat"]))
 async def send_certificate_btn(message: Message, state: FSMContext):
-    cert_path = await ensure_certificate_and_get_path(tg_id=message.from_user.id)
-    document = FSInputFile(cert_path)
-    await message.answer_document(document, caption="Ваш сертификат членства 🪪")
+    # 1. Показываем статус "загрузка документа", пока бот думает
+    await message.bot.send_chat_action(chat_id=message.chat.id, action="upload_document")
+
+    try:
+        # 2. Узнаем язык пользователя из базы данных
+        async with SessionLocal() as s:
+            user = await s.scalar(select(User).where(User.tg_id == message.from_user.id))
+            lang = user.language if user and user.language else 'ru'
+
+        # 3. Выбираем текст подписи в зависимости от языка
+        if lang == 'uz':
+            caption_text = "Sizning a'zolik sertifikatingiz 🪪"
+        else:
+            caption_text = "Ваш сертификат членства 🪪"
+
+        # 4. Получаем путь и отправляем файл
+        cert_path = await ensure_certificate_and_get_path(tg_id=message.from_user.id)
+        document = FSInputFile(cert_path)
+
+        # Подставляем переменную caption_text
+        await message.answer_document(document, caption=caption_text)
+
+    except Exception as e:
+        await message.answer(f"Xatolik / Ошибка: {e}")
 
 
 # === 2. Старт регистрации ===
