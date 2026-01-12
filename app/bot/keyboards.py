@@ -81,12 +81,12 @@ def kb_about_menu(lang="ru"):
         builder.row(InlineKeyboardButton(text="🎯 Yo‘nalishlar", callback_data="about_directions"))
         builder.row(InlineKeyboardButton(text="💼 Faoliyat", callback_data="about_activity"))
         builder.row(InlineKeyboardButton(text="🚀 Loyihalar", callback_data="about_projects"))
-        builder.row(InlineKeyboardButton(text="🌐 Saytimiz", url="https://yuksalish.uz"))
+        builder.row(InlineKeyboardButton(text="🌐 Saytimiz", url="https://yuksalish.org"))
     else:
         builder.row(InlineKeyboardButton(text="🎯 Направления", callback_data="about_directions"))
         builder.row(InlineKeyboardButton(text="💼 Деятельность", callback_data="about_activity"))
         builder.row(InlineKeyboardButton(text="🚀 Проекты", callback_data="about_projects"))
-        builder.row(InlineKeyboardButton(text="🌐 Наш сайт", url="https://yuksalish.uz"))
+        builder.row(InlineKeyboardButton(text="🌐 Наш сайт", url="https://yuksalish.org"))
 
     builder.adjust(1)
     return builder.as_markup()

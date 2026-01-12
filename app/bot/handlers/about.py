@@ -12,7 +12,7 @@ CONTENT = {
     "ru": {
         "main": (
             "<b>О движении «Юксалиш»</b> 🇺🇿\n\n"
-            "Общенациональное движение «Юксалиш» создано для объединения граждан, "
+            "Движение «Юксалиш» создано для объединения граждан, "
             "бизнеса и государства ради устойчивого развития Узбекистана.\n\n"
             "Мы строим мост между народом и властью, продвигаем реформы и "
             "развиваем гражданское общество.\n\n"
@@ -29,7 +29,7 @@ CONTENT = {
             "<b>💼 Наша деятельность:</b>\n\n"
             "Мы проводим форумы, общественные слушания, благотворительные акции и "
             "образовательные тренинги.\n\n"
-            "Ежегодно наши волонтеры участвуют в сотнях мероприятий по всей республике."
+            ""
         ),
         "projects": (
             "<b>🚀 Текущие проекты:</b>\n\n"
@@ -42,7 +42,7 @@ CONTENT = {
     "uz": {
         "main": (
             "<b>«Yuksalish» harakati haqida</b> 🇺🇿\n\n"
-            "«Yuksalish» umummilliy harakati O‘zbekistonning barqaror rivojlanishi yo‘lida "
+            "«Yuksalish» harakati O‘zbekistonning barqaror rivojlanishi yo‘lida "
             "fuqarolar, biznes va davlatni birlashtirish maqsadida tashkil etilgan.\n\n"
             "Biz xalq va davlat o‘rtasida ko‘prik bo‘lib, islohotlarni ilgari suramiz va "
             "fuqarolik jamiyatini rivojlantiramiz.\n\n"
@@ -59,7 +59,7 @@ CONTENT = {
             "<b>💼 Bizning faoliyatimiz:</b>\n\n"
             "Biz forumlar, jamoatchilik eshituvlari, xayriya aksiyalari va "
             "o‘quv treninglarini o‘tkazamiz.\n\n"
-            "Har yili bizning ko‘ngillilarimiz respublika bo‘ylab yuzlab tadbirlarda ishtirok etadilar."
+            "Har yili bizning a‘zolarimiz respublika bo‘ylab yuzlab tadbirlarda ishtirok etadilar."
         ),
         "projects": (
             "<b>🚀 Joriy loyihalar:</b>\n\n"

@@ -3,12 +3,26 @@ import re
 # Список запрещенных слов (в нижнем регистре)
 # Сюда можно добавить мат, оскорбления и служебные слова
 BAD_WORDS = [
-    "admin", "administrator", "moderator", "support", "bot", "test",
-    "bla", "blabla", "asdf", "qwerty", "xxx",
-    # Русские плохие слова (корни)
-    "хуй", "хер", "пизд", "ебал", "бля", "мудак", "говно", "жопа",
-    # Узбекские плохие слова (корни)
-    "jalab", "qotoq", "suka", "gandon", "yop tvoy", "sik"
+    # --- Системные и служебные слова ---
+    "admin", "administrator", "moderator", "support", "bot", "robot", "root",
+    "manager", "director", "president", "yuksalish", "system",
+
+    # --- "Мусор" и тесты ---
+    "test", "demo", "null", "undefined", "qwerty", "asdf", "zxcv",
+    "bla", "blabla", "xxx", "123", "noname",
+
+    # --- Русский мат и оскорбления (корни) ---
+    "хуй", "хер", "пизд", "ебал", "ебан", "бля", "блят",
+    "мудак", "говно", "жопа", "сука", "манда", "залупа",
+    "пидор", "педик", "гандон", "гондон", "чмо", "лох",
+    "шлюха", "проститутка", "дроч", "сперма", "тварь",
+
+    # --- Узбекский мат и оскорбления ---
+    "jalab", "qotoq", "sik", "sike", "skay",
+    "gandon", "yop tvoy", "dalbayob", "dalboyob",
+    "haromi", "fohisha", "foxisha", "qanjiq",
+    "ombir", "onangni", "eshshak", "mol", "hayvon",
+    "koting", "kotini"  # Специфичные формы, чтобы случайно не забанить обычные слова
 ]
 
 
