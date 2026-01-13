@@ -1,7 +1,9 @@
+import re
 from aiogram import Router, F, types
 from aiogram.types import Message, CallbackQuery, FSInputFile, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from sqlalchemy import select
+from app.bot.keyboards import kb_confirm
 
 # Импорты из вашего проекта
 from app.bot.states import Reg
@@ -265,36 +267,79 @@ async def reg_gender_chosen(call: CallbackQuery, state: FSMContext):
 # === 7. Телефон и Предварительное сохранение ===
 @router.message(Reg.phone, F.contact)
 async def reg_phone(message: Message, state: FSMContext):
-    phone = message.contact.phone_number
-    # Сохраняем телефон в state, чтобы потом вывести в подтверждении
-    await state.update_data(phone=phone)
-
     data = await state.get_data()
+    lang = data.get('language', 'ru')
 
-    # Получаем названия региона и сферы для красивого вывода
+    phone_to_save = None
+
+    # === 1. ПРОВЕРКА: Кнопка или Текст? ===
+    if message.contact:
+        # Если нажали кнопку
+        phone_to_save = message.contact.phone_number
+    elif message.text:
+        # Если написали вручную: убираем пробелы, скобки, тире
+        clean_text = re.sub(r'[ \-\(\)]', '', message.text)
+
+        # Проверяем регуляркой (от 7 до 15 цифр, может быть плюс в начале)
+        if re.match(r'^\+?\d{7,15}$', clean_text):
+            phone_to_save = clean_text
+        else:
+            # Ошибка формата
+            msg = "Noto‘g‘ri format (masalan: +998901234567)." if lang == 'uz' else "Неверный формат (пример: +998901234567)."
+            await message.answer(msg)
+            return
+    else:
+        # Если прислали картинку или стикер
+        msg = "Iltimos, telefon raqamingizni yuboring." if lang == 'uz' else "Пожалуйста, отправьте номер телефона."
+        await message.answer(msg)
+        return
+
+    # Сохраняем валидный номер
+    await state.update_data(phone=phone_to_save)
+
+    # === 2. ПОДГОТОВКА ДАННЫХ ДЛЯ ПРОВЕРКИ ===
     async with SessionLocal() as s:
         reg_obj = await s.get(Region, data['region_id'])
         sph_obj = await s.get(Sphere, data['sphere_id'])
-        reg_name = reg_obj.name_ru if reg_obj else "Не найден"
-        sph_name = sph_obj.name_ru if sph_obj else "Не найден"
 
-    # Формируем текст подтверждения
-    text = (
-        f"📋 <b>Проверьте данные:</b>\n\n"
-        f"📍 Регион: {reg_name}\n"
-        f"💼 Сфера: {sph_name}\n"
-        f"📅 Год: {data['birth_year']}\n"
-        f"👤 Пол: {data['gender']}\n"
-        f"📞 Телефон: {phone}"
-    )
+        # Имя (которое ввели в начале)
+        full_name = data.get("full_name", message.from_user.full_name)
 
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="✅ Все верно", callback_data="confirm_yes")],
-        [InlineKeyboardButton(text="❌ Заполнить заново", callback_data="confirm_no")]
-    ])
+        if lang == 'uz':
+            # --- УЗБЕКСКИЙ ВАРИАНТ ---
+            reg_name = reg_obj.name_uz if reg_obj else "Topilmadi"
+            sph_name = sph_obj.name_uz if sph_obj else "Topilmadi"
+            gender_txt = "Erkak" if data['gender'] == 'male' else "Ayol"
 
+            text = (
+                f"📋 <b>Ma’lumotlarni tekshiring:</b>\n\n"
+                f"👤 <b>F.I.Sh:</b> {full_name}\n"
+                f"📍 <b>Hudud:</b> {reg_name}\n"
+                f"💼 <b>Soha:</b> {sph_name}\n"
+                f"📅 <b>Tug‘ilgan yil:</b> {data['birth_year']}\n"
+                f"👤 <b>Jins:</b> {gender_txt}\n"
+                f"📞 <b>Telefon:</b> {phone_to_save}"
+            )
+        else:
+            # --- РУССКИЙ ВАРИАНТ ---
+            reg_name = reg_obj.name_ru if reg_obj else "Не найден"
+            sph_name = sph_obj.name_ru if sph_obj else "Не найден"
+            gender_txt = "Мужской" if data['gender'] == 'male' else "Женский"
+
+            text = (
+                f"📋 <b>Проверьте данные:</b>\n\n"
+                f"👤 <b>ФИО:</b> {full_name}\n"
+                f"📍 <b>Регион:</b> {reg_name}\n"
+                f"💼 <b>Сфера:</b> {sph_name}\n"
+                f"📅 <b>Год рождения:</b> {data['birth_year']}\n"
+                f"👤 <b>Пол:</b> {gender_txt}\n"
+                f"📞 <b>Телефон:</b> {phone_to_save}"
+            )
+
+    # === 3. ОТПРАВКА ===
     await state.set_state(Reg.confirm)
-    await message.answer(text, reply_markup=kb, parse_mode="HTML")
+    # Передаем lang в клавиатуру, чтобы кнопки были на нужном языке
+    await message.answer(text, reply_markup=kb_confirm(lang), parse_mode="HTML")
 
 
 # === 8. Отмена / Заново ===
@@ -312,23 +357,23 @@ from app.bot.keyboards import kb_main  # <--- Убедитесь, что имп�
 @router.callback_query(Reg.confirm, F.data == "confirm_yes")
 async def reg_final(call: CallbackQuery, state: FSMContext):
     data = await state.get_data()
+    # Получаем язык пользователя (ru или uz)
     lang = data.get('language', 'ru')
 
     # Достаем введенное имя
     full_name_input = data.get("full_name", "Unknown")
 
+    # 1. СОХРАНЕНИЕ ДАННЫХ В БД
     async with SessionLocal() as s:
         # Получаем пользователя
         q = await s.execute(select(User).where(User.tg_id == call.from_user.id))
         user = q.scalar_one()
 
         # === ОБНОВЛЯЕМ ИМЯ В БАЗЕ ДАННЫХ ===
-        # Мы заменяем то, что пришло от Телеграма, на то, что ввел юзер
-        # Попробуем разделить на Имя и Фамилию
         parts = full_name_input.split()
         if len(parts) >= 2:
             user.first_name = parts[0]
-            user.last_name = " ".join(parts[1:])  # Всё остальное в фамилию
+            user.last_name = " ".join(parts[1:])
         else:
             user.first_name = full_name_input
             user.last_name = ""
@@ -357,35 +402,46 @@ async def reg_final(call: CallbackQuery, state: FSMContext):
 
         await s.commit()
 
-    # 2. Удаляем старое сообщение с кнопками "Подтвердить/Отмена", чтобы было чисто
+    # 2. Удаляем старое сообщение с кнопками
     await call.message.delete()
 
-    # Отправляем "Генерируем...", чтобы юзер не скучал
-    wait_msg = await call.message.answer("⏳ Генерируем сертификат...")
+    # Определяем текст ожидания на нужном языке
+    wait_text = "⏳ Sertifikat tayyorlanmoqda..." if lang == 'uz' else "⏳ Генерируем сертификат..."
+
+    # Отправляем сообщение "Генерируем..."
+    wait_msg = await call.message.answer(wait_text)
 
     try:
-        # Генерируем файл
+        # Генерируем файл сертификата
         cert_path = await ensure_certificate_and_get_path(tg_id=call.from_user.id)
 
-        # Удаляем "Генерируем..."
+        # Удаляем сообщение "Генерируем..."
         await wait_msg.delete()
 
-        # === 3. ОТПРАВЛЯЕМ ПОЗДРАВЛЕНИЕ И МЕНЮ ===
-        # Вот здесь мы заменяем кнопку "Поделиться номером" на "Главное меню"
+        # === 3. ОПРЕДЕЛЯЕМ ТЕКСТЫ ПОЗДРАВЛЕНИЯ ===
+        if lang == 'uz':
+            text_success = "Tabriklaymiz! Ro‘yxatdan o‘tish muvaffaqiyatli yakunlandi! 🎉\nSiz hamjamiyatga qabul qilindingiz."
+            caption_cert = "Sizning a'zolik sertifikatingiz tayyor! 🪪"
+        else:
+            text_success = "Поздравляем! Регистрация успешно завершена! 🎉\nВы приняты в сообщество."
+            caption_cert = "Ваш сертификат готов! 🪪"
+
+        # Отправляем Поздравление и ГЛАВНОЕ МЕНЮ (на нужном языке)
         await call.message.answer(
-            "Поздравляем! Регистрация успешно завершена! 🎉\nВы приняты в сообщество.",
-            reply_markup=kb_main(is_registered=True, lang=lang)  # <--- ГЛАВНОЕ ИЗМЕНЕНИЕ
+            text_success,
+            reply_markup=kb_main(is_registered=True, lang=lang)  # Передаем язык в меню
         )
 
-        # 4. Отправляем сам сертификат
+        # 4. Отправляем сам сертификат с переведенной подписью
         document = FSInputFile(cert_path)
         await call.message.answer_document(
             document,
-            caption="Ваш сертификат готов! 🪪"
+            caption=caption_cert
         )
 
     except Exception as e:
-        await call.message.answer(f"Ошибка при создании сертификата: {e}")
+        err_msg = f"Xatolik: {e}" if lang == 'uz' else f"Ошибка при создании сертификата: {e}"
+        await call.message.answer(err_msg)
 
     await state.clear()
     await call.answer()

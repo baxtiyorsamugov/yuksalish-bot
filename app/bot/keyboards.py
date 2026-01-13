@@ -113,13 +113,17 @@ def kb_phone(lang="ru"):
     )
 
 # Кнопки для подтверждения данных в процессе регистрации
-def kb_confirm():
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="✅ Подтвердить", callback_data="confirm_yes")],
-            [InlineKeyboardButton(text="❌ Изменить", callback_data="confirm_no")]
-        ]
-    )
+def kb_confirm(lang="ru"):
+    builder = InlineKeyboardBuilder()
+
+    if lang == 'uz':
+        builder.row(InlineKeyboardButton(text="✅ Tasdiqlash", callback_data="confirm_yes"))
+        builder.row(InlineKeyboardButton(text="❌ O‘zgartirish", callback_data="confirm_no"))
+    else:
+        builder.row(InlineKeyboardButton(text="✅ Все верно", callback_data="confirm_yes"))
+        builder.row(InlineKeyboardButton(text="❌ Заполнить заново", callback_data="confirm_no"))
+
+    return builder.as_markup()
 
 
 def get_regions_keyboard(regions_list, lang='ru'):
