@@ -31,7 +31,8 @@ def kb_main(is_registered=False, lang="ru"):
             "my_events": "Mening tadbirlarim",
             "about": "Harakat haqida",
             "cert": "Sertifikat",
-            "reg": "Ro‘yxatdan o‘tish",
+            # "reg": "Ro‘yxatdan o‘tish",
+            "reg": "A'zo bo‘lish",
             "feedback": "✍️ Taklif va murojaat" # Или "Taklif va murojaat"
         }
     }
@@ -42,7 +43,7 @@ def kb_main(is_registered=False, lang="ru"):
     # Текст для кнопки регистрации в зависимости от языка
     reg_text = "Регистрация"
     if lang == "uz":
-        reg_text = "Ro‘yxatdan o‘tish"
+        reg_text = "A'zo bo‘lish"
     elif lang == "en":
         reg_text = "Registration"
 

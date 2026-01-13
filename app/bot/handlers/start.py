@@ -54,7 +54,7 @@ async def set_lang(call: CallbackQuery, state: FSMContext):
             text = "Добро пожаловать! Главное меню 👇"
     else:
         if lang == 'uz':
-            text = "Yaxshi. Ro‘yxatdan o‘tishni boshlaymiz 👇\n Ro‘yxatdan o‘tish tugmasini bosing: "
+            text = "Yaxshi. A'zo bo‘lishni boshlaymiz 👇\n A'zo bo‘lish tugmasini bosing: "
         elif lang == 'en':
             text = "Ok. Let's start registration 👇\nPress: Registration"
         else:

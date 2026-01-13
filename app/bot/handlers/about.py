@@ -23,10 +23,12 @@ CONTENT = {
             "1️⃣ <b>Мониторинг реформ</b> — следим за исполнением государственных программ.\n"
             "2️⃣ <b>Диалог</b> — организуем площадки для обсуждения проблем общества.\n"
             "3️⃣ <b>Поддержка инициатив</b> — помогаем активным гражданам реализовать идеи.\n"
-            "4️⃣ <b>Международное сотрудничество</b> — привлекаем опыт зарубежных партнеров."
+            "4️⃣ <b>Международное сотрудничество</b> — привлекаем опыт зарубежных партнеров. \n"
+            "4️⃣ <b>Исследования</b> — изучаем общественное мнение, проводим исследования и опросы, формируем аналитические выводы и практические предложения по социальным проблемам. "
         ),
         "activity": (
             "<b>💼 Наша деятельность:</b>\n\n"
+            "Мониторинг, общественная экспертиза проектов нормативно-правовых актов, исследования \n"
             "Мы проводим форумы, общественные слушания, благотворительные акции и "
             "образовательные тренинги.\n\n"
             ""
@@ -35,7 +37,11 @@ CONTENT = {
             "<b>🚀 Текущие проекты:</b>\n\n"
             "🔹 <b>«100 Community»</b> — развитие лидерства.\n"
             "🔹 <b>«Гражданский мониторинг»</b> — контроль инфраструктуры.\n"
-            "🔹 <b>«Start Up» инициативы</b> — поддержка молодежного бизнеса.\n\n"
+            "🔹 <b>«Bir million daraxt»</b> —  расширение зелёных территорий.\n"
+            "🔹 <b>«Start Up» инициативы</b> — поддержка молодежного бизнеса.\n"
+            "🔹 <b>«Hayot ulash»</b> —  решение проблемы питьевой воды в отдалённых районах, бурение колодцев и повышение качества жизни населения.\n"
+            "🔹 <b>«Biz donormiz»</b> — формирование культуры донорства крови.\n"
+            "🔹 <b>«Ziyoli kelajak»</b> — улучшение школьной инфраструктуры, укрепление материальной базы и развитие образовательной среды.\n\n"
             "<i>Следите за анонсами в разделе Мероприятия!</i>"
         )
     },
@@ -53,19 +59,24 @@ CONTENT = {
             "1️⃣ <b>Islohotlar monitoringi</b> — davlat dasturlarining ijrosini kuzatib boramiz.\n"
             "2️⃣ <b>Muloqot</b> — jamiyat muammolarini muhokama qilish uchun maydonlar tashkil etamiz.\n"
             "3️⃣ <b>Tashabbuslarni qo‘llab-quvvatlash</b> — faol fuqarolarga g‘oyalarini amalga oshirishda yordam beramiz.\n"
-            "4️⃣ <b>Xalqaro hamkorlik</b> — xorijiy hamkorlarning tajribasini jalb qilamiz."
+            "4️⃣ <b>Xalqaro hamkorlik</b> — xorijiy hamkorlarning tajribasini jalb qilamiz. \n"
+            "4️⃣ <b>Tadqiqot</b> — jamoatchilik fikrini o‘rganib, tadqiqotlar va so‘rovlar o‘tkazamiz, ijtimoiy muammolar bo‘yicha tahliliy xulosalar va amaliy takliflar shakllantiramiz. "
         ),
         "activity": (
             "<b>💼 Bizning faoliyatimiz:</b>\n\n"
+            " Monitoring, normativ-huquqiy hujjatlar loyihalarining jamoatchilik ekspertizasi, tadqiqotlar\n"
             "Biz forumlar, jamoatchilik eshituvlari, xayriya aksiyalari va "
             "o‘quv treninglarini o‘tkazamiz.\n\n"
             "Har yili bizning a‘zolarimiz respublika bo‘ylab yuzlab tadbirlarda ishtirok etadilar."
         ),
         "projects": (
             "<b>🚀 Joriy loyihalar:</b>\n\n"
-            "🔹 <b>«100 Community»</b> — liderlikni rivojlantirish.\n"
-            "🔹 <b>«Jamoatchilik monitoringi»</b> — infratuzilma nazorati.\n"
-            "🔹 <b>«Start Up» tashabbuslari</b> — yoshlar biznesini qo‘llab-quvvatlash.\n\n"
+            "🔹 <b>“100 Community”</b> — liderlikni rivojlantirish.\n"
+            "🔹 <b>“Jamoatchilik monitoringi”</b> — infratuzilma nazorati.\n"
+            "🔹 <b>“Bir million daraxt”</b> — yashil hududlarni kengaytirish. \n"
+            "🔹 <b>“Hayot ulash”</b> — chekka hududlarda ichimlik suvi muammosini hal etish, quduqlar qazish va aholining hayot sifatini yaxshilash.\n"
+            "🔹 <b>“Biz donormiz”</b> — qon donorligi madaniyatini shakllantirish. \n"
+            "🔹 <b>“Ziyoli kelajak”</b> — maktab infratuzilmasini yaxshilash, moddiy bazasini mustahkamlash va ta’lim muhitini rivojlantirish \n\n"
             "<i>E’lonlarni «Tadbirlar» bo‘limida kuzatib boring!</i>"
         )
     }

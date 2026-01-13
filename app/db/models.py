@@ -21,25 +21,28 @@ class User(Base):
     # Связи (оставляем, они не мешают работе бота)
     # Здесь удалили uselist=False, чтобы не усложнять, если не используется
     # Но для обратной совместимости можно оставить просто relationship
+    profile: Mapped["Profile"] = relationship("Profile", back_populates="user", uselist=False, lazy="selectin")
+    certificates: Mapped[list["Certificate"]] = relationship("Certificate", back_populates="user", lazy="selectin")
 
 
 class Profile(Base):
     __tablename__ = "profiles"
-
-    # === ВОЗВРАЩАЕМ КАК БЫЛО ===
-    # Убираем колонку id
-    # Делаем user_id первичным ключом (One-to-One)
-    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"))
 
     region_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("regions.id"))
     sphere_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("spheres.id"))
     gender: Mapped[str | None] = mapped_column(String(16))
     birth_year: Mapped[int | None] = mapped_column(Integer)
 
-    # Связи нужны для генерации текста (регион/сфера), но они не влияют на структуру БД
-    region: Mapped["Region"] = relationship("Region", back_populates="profiles")
-    sphere: Mapped["Sphere"] = relationship("Sphere", back_populates="profiles")
-    # user: Mapped["User"] = relationship("User") # Можно закомментировать, если не используется явно
+    # === ВОТ ЭТОЙ СТРОКИ НЕ ХВАТАЕТ 👇 ===
+    status: Mapped[str] = mapped_column(String(20), default="pending")
+    # ====================================
+
+    # Связи
+    user: Mapped["User"] = relationship("User", back_populates="profile", lazy="selectin")
+    region: Mapped["Region"] = relationship("Region", back_populates="profiles", lazy="selectin")
+    sphere: Mapped["Sphere"] = relationship("Sphere", back_populates="profiles", lazy="selectin")
 
 
 class Certificate(Base):
@@ -49,6 +52,8 @@ class Certificate(Base):
     member_code: Mapped[str] = mapped_column(String(32), unique=True)
     file_path: Mapped[str | None] = mapped_column(String(255))
     issued_at = mapped_column(DateTime, server_default=func.now())
+
+    user: Mapped["User"] = relationship("User", back_populates="certificates", lazy="selectin")
 
 
 class Region(Base):
