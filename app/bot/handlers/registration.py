@@ -211,29 +211,40 @@ async def reg_phone(message: Message, state: FSMContext):
     lang = data.get('language', 'ru')
     phone_to_save = None
 
+    # ВАРИАНТ 1: Если нажали кнопку (отправили контакт)
     if message.contact:
         phone_to_save = message.contact.phone_number
+
+    # ВАРИАНТ 2: Если написали текст вручную
     elif message.text:
+        # Очищаем от скобок, пробелов и тире
         clean_text = re.sub(r'[ \-\(\)]', '', message.text)
+
+        # Проверка валидности (от 7 до 15 цифр, с плюсом или без)
         if re.match(r'^\+?\d{7,15}$', clean_text):
             phone_to_save = clean_text
         else:
-            msg = "Noto‘g‘ri format." if lang == 'uz' else "Неверный формат."
+            # Ошибка формата
+            msg = "Noto‘g‘ri format (masalan: +998901234567)." if lang == 'uz' else "Неверный формат (пример: +998901234567)."
             await message.answer(msg)
             return
     else:
-        msg = "Telefon raqam yuboring." if lang == 'uz' else "Отправьте номер телефона."
+        # Если прислали фото, стикер или что-то другое
+        msg = "Iltimos, telefon raqamingizni yuboring." if lang == 'uz' else "Пожалуйста, отправьте номер телефона."
         await message.answer(msg)
         return
 
+    # Если номер успешно получен — сохраняем
     await state.update_data(phone=phone_to_save)
 
+    # === ФОРМИРУЕМ ТЕКСТ ПОДТВЕРЖДЕНИЯ ===
     async with SessionLocal() as s:
         reg_obj = await s.get(Region, data['region_id'])
         sph_obj = await s.get(Sphere, data['sphere_id'])
         full_name = data.get("full_name", message.from_user.full_name)
 
         if lang == 'uz':
+            # --- УЗБЕКСКИЙ ВАРИАНТ ---
             reg_name = reg_obj.name_uz if reg_obj else "Topilmadi"
             sph_name = sph_obj.name_uz if sph_obj else "Topilmadi"
             gender_txt = "Erkak" if data['gender'] == 'male' else "Ayol"
@@ -248,6 +259,7 @@ async def reg_phone(message: Message, state: FSMContext):
                 f"📞 <b>Telefon:</b> {phone_to_save}"
             )
         else:
+            # --- РУССКИЙ ВАРИАНТ ---
             reg_name = reg_obj.name_ru if reg_obj else "Не найден"
             sph_name = sph_obj.name_ru if sph_obj else "Не найден"
             gender_txt = "Мужской" if data['gender'] == 'male' else "Женский"
