@@ -31,7 +31,6 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 # === СОЗДАЕМ ПРИЛОЖЕНИЕ ===
 app = FastAPI()
 
-
 # === БЕЗОПАСНОСТЬ ===
 class AdminAuth(AuthenticationBackend):
     async def login(self, request: Request) -> bool:
@@ -135,7 +134,11 @@ class ProfileAdmin(ModelView, model=Profile):
         "controls"
     ]
 
-    column_searchable_list = ["user.first_name", "user.last_name", "user.phone"]
+    column_searchable_list = [
+        User.first_name,
+        User.last_name,
+        User.phone
+    ]
 
     can_create = False
     can_edit = True
