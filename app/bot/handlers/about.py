@@ -28,9 +28,7 @@ CONTENT = {
         ),
         "activity": (
             "<b>💼 Наша деятельность:</b>\n\n"
-            "Мониторинг, общественная экспертиза проектов нормативно-правовых актов, исследования \n"
-            "Мы проводим форумы, общественные слушания, благотворительные акции и "
-            "образовательные тренинги.\n\n"
+            "Мы проводим мониторинги, общественная экспертиза проектов нормативно-правовых актов, исследования, форумы, общественные слушания, благотворительные акции и образовательные тренинги.\n\n"
             ""
         ),
         "projects": (
@@ -64,10 +62,8 @@ CONTENT = {
         ),
         "activity": (
             "<b>💼 Bizning faoliyatimiz:</b>\n\n"
-            " Monitoring, normativ-huquqiy hujjatlar loyihalarining jamoatchilik ekspertizasi, tadqiqotlar\n"
-            "Biz forumlar, jamoatchilik eshituvlari, xayriya aksiyalari va "
-            "o‘quv treninglarini o‘tkazamiz.\n\n"
-            "Har yili bizning a‘zolarimiz respublika bo‘ylab yuzlab tadbirlarda ishtirok etadilar."
+            "Biz monitoring, normativ-huquqiy hujjatlar loyihalarining jamoatchilik ekspertizasi, tadqiqotlar forumlar, jamoatchilik eshituvlari, xayriya aksiyalari va o‘quv treninglarini o‘tkazamiz.\n\n"
+            "Har yili bizning a‘zolarimiz respublika bo‘ylab yuzlab tadbirlarda ishtirok etadi."
         ),
         "projects": (
             "<b>🚀 Joriy loyihalar:</b>\n\n"
@@ -76,7 +72,7 @@ CONTENT = {
             "🔹 <b>“Bir million daraxt”</b> — yashil hududlarni kengaytirish. \n"
             "🔹 <b>“Hayot ulash”</b> — chekka hududlarda ichimlik suvi muammosini hal etish, quduqlar qazish va aholining hayot sifatini yaxshilash.\n"
             "🔹 <b>“Biz donormiz”</b> — qon donorligi madaniyatini shakllantirish. \n"
-            "🔹 <b>“Ziyoli kelajak”</b> — maktab infratuzilmasini yaxshilash, moddiy bazasini mustahkamlash va ta’lim muhitini rivojlantirish \n\n"
+            "🔹 <b>“Ziyoli kelajak”</b> — maktab infratuzilmasini yaxshilash, moddiy bazasini mustahkamlash va ta’lim muhitini rivojlantirish. \n\n"
             "<i>E’lonlarni «Tadbirlar» bo‘limida kuzatib boring!</i>"
         )
     }

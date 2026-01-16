@@ -118,7 +118,7 @@ async def reg_region_chosen(call: CallbackQuery, state: FSMContext):
 
     if lang == 'uz':
         text_accepted = "Hudud tanlandi ✅"
-        text_ask_sphere = "Faoliyat sohangizni tanlang:"
+        text_ask_sphere = "Qaysi ijtimoiy toifaga mansubsiz? Iltimos belgilang."
     else:
         text_accepted = "Регион принят ✅"
         text_ask_sphere = "Выберите сферу деятельности:"
